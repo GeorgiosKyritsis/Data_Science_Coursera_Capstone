@@ -4,16 +4,11 @@ setwd("/home/inamoto21/Desktop/github/Capstone/final/en_US")
 
 load("sample_all.RData")
 
-#Reading the sampled txt files
-# sample_blogs = readLines("sample_blogs.txt")
-# sample_news = readLines("sample_news.txt")
-# sample_twit = readLines("sample_twit.txt")
-
 #Convert the entire txt to lowercase characters
-sample_twit = tolower(sample_twit)
+sample_twitter = tolower(sample_twitter)
 
 #Separating the Words
-twitter_words_l <- strsplit(sample_twit, "\\W")
+twitter_words_l <- strsplit(sample_twitter, "\\W")
 
 #Convert the list to vector
 twitter_words_v <- unlist(twitter_words_l)
