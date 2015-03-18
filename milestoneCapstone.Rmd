@@ -1,0 +1,248 @@
+---
+title: "Milestone Report for Data Science Specialization SwiftKey Capstone"
+author: "Georgios Kyritsis"
+date: "20/03/2015"
+output: html_document
+---
+Summary
+-------
+
+**Text mining** refers to the process of deriving high-quality information from text. High-quality information is typically derived through the devising of patterns and trends through means such as *statistical pattern learning*. **Text mining** usually involves the process of structuring the input text (usually parsing, along with the addition of some derived linguistic features and the removal of others, and subsequent insertion into a database), deriving patterns within the structured data, and finally evaluation and interpretation of the output. 'High quality' in **text mining** usually refers to some combination of relevance, novelty, and interestingness. Typical text mining tasks include text categorization, text clustering, concept/entity extraction, production of granular taxonomies, sentiment analysis, document summarization, and entity relation modeling (i.e., learning relations between named entities).
+
+Text analysis involves information retrieval, lexical analysis to study *word frequency distributions*, *pattern recognition*, *tagging/annotation*, *information extraction*, data mining techniques including link and association analysis, visualization, and predictive analytics. The overarching goal is, essentially, to turn text into data for analysis, via application of natural language processing (NLP) and analytical methods.
+
+The above mentioned techniques are used by **SwiftKey** (best known for smart SwiftKey Keyboard apps which learn from you to make typing on touchscreens faster and easier) to help people type faster.
+
+The ultimate **goal** of this project is to mimic the SwiftKey keyboard and predict the next word the user intents to write.
+
+Useful links for the above mentioned information are the followings:
+
+- <http://en.wikipedia.org/wiki/Text_mining>
+- <http://swiftkey.com/en/company/>
+
+Data acquisition and cleaning
+-----------------------------
+
+In this project we will handle only the **English version** of the txt files derived from blogs, news, and twitter. The goals of this task are
+
+- Download the data from <https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip>
+- Import the Data into RStudio
+- Sample the Data, because they are too big for my PC to handle
+- Tokenization (breaking a stream of text into words)
+- Profanity filtering (removing profanity and other words we do not want to predict)
+
+Importing the Data and sampling them
+------------------------------------
+
+After downloading the zip file from web and extracting it, it's time to load the files (**en_US.blogs.txt, en_US.news.txt, en_US.twitter.txt**) to RStudio.
+
+**Loading the Data**
+```{r loading, eval=TRUE, warning=FALSE, message=FALSE}
+setwd("/home/inamoto21/Desktop/github/Capstone/final/en_US")
+blogs = readLines("en_US.blogs.txt")
+news = readLines("en_US.news.txt")
+twitter = readLines("en_US.twitter.txt")
+```
+**Structure of the 3 txt files**
+```{r structure, eval=TRUE, warning=FALSE, message=FALSE}
+str(blogs)
+str(news)
+str(twitter)
+```
+
+```{r number_of_lines,echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE}
+lines_blogs = length(blogs)
+lines_news = length(news)
+lines_twitter = length(twitter)
+
+barplot(c(lines_blogs, lines_news, lines_twitter),
+        main = "Number of Lines",
+        names.arg = c("Blogs", "News", "Twitter"),
+        ylab = "Number of lines",
+        col=rainbow(20))
+```
+
+From the file's structure and the barplot we can conclude that the files are too large to analyze them. So we randomly sample them and parse 1000 chunks of text from each file.
+
+**Sampling the Data. Parsing 1000 chunks and binding them together**
+```{r sampling, eval=TRUE, warning=FALSE, message=FALSE}
+sample_blogs = sample(blogs, 1000)
+sample_news = sample(news, 1000)
+sample_twitter = sample(twitter, 1000)
+sample_all = rbind(sample_blogs, sample_news, sample_twitter)
+```
+
+**Cleaning and Tokenizing the Data**
+
+By cleaning the Data, we mean that we remove the numbers and punctuation from the strings and then we split the string into words (tokenization).
+
+```{r tokenization, echo=TRUE, warning=FALSE, message=FALSE}
+library(tm)
+library(RWeka)
+library(wordcloud)
+#Convert the entire txt to lowercase characters
+sample_blogs = tolower(sample_blogs)
+sample_news =tolower(sample_news)
+sample_twitter = tolower(sample_twitter)
+
+#Separating the Words
+blogs_words_l <- strsplit(sample_blogs, "\\W")
+news_words_l <- strsplit(sample_news, "\\W")
+twitter_words_l <- strsplit(sample_twitter, "\\W")
+
+#Convert the list to vector
+blogs_words_v <- unlist(blogs_words_l)
+news_words_v <- unlist(news_words_l)
+twitter_words_v <- unlist(twitter_words_l)
+
+#Remove the blanks from the vector
+not.blanks.v <- which(blogs_words_v!="")
+blogs_words_v <- blogs_words_v[not.blanks.v]
+not.blanks.v <- which(news_words_v!="")
+news_words_v <- news_words_v[not.blanks.v]
+not.blanks.v <- which(twitter_words_v!="")
+twitter_words_v <- twitter_words_v[not.blanks.v]
+
+#Corpus
+blogs_corpus = Corpus(VectorSource(blogs_words_v))
+news_corpus = Corpus(VectorSource(news_words_v))
+twitter_corpus = Corpus(VectorSource(twitter_words_v))
+```
+
+```{r number_of_words, echo=FALSE,warning=FALSE,message=FALSE}
+words_blogs = length(blogs_words_v)
+words_news = length(news_words_v)
+words_twitter = length(twitter_words_v)
+
+barplot(c(words_blogs, words_news, words_twitter),
+        main = "Number of Words",
+        names.arg = c("Blogs", "News", "Twitter"),
+        ylab = "Number of words",
+        col=rainbow(20))
+```
+
+Visual Representation of Text Data
+----------------------------------
+
+The importance of each word is shown with font size or color. This format is useful for quickly perceiving the most prominent words.
+
+**BLOGS WORD CLOUD**
+
+```{r blogs_wordcloud, echo=TRUE, warning=FALSE, message=FALSE, fig.align='left'}
+wordcloud(blogs_corpus, scale=c(5,0.5),
+          min.freq=5, max.words=100, random.order=TRUE,
+          rot.per=0.5, use.r.layout=FALSE,
+          colors=brewer.pal(8, "Dark2"))
+```
+
+**NEWS WORD CLOUD**
+
+```{r news_wordcloud, echo=TRUE, warning=FALSE, message=FALSE, fig.align='left'}
+wordcloud(news_corpus, scale=c(5,0.5),
+          min.freq=5, max.words=100, random.order=TRUE,
+          rot.per=0.5, use.r.layout=FALSE,
+          colors=brewer.pal(8, "Dark2"))
+```
+
+**TWITTER WORD CLOUD**
+
+```{r twitter_wordcloud, echo=TRUE, warning=FALSE, message=FALSE, fig.align='left'}
+par(mar=c(10,5,5,5))
+wordcloud(twitter_corpus, scale=c(5,0.5),
+          min.freq=5, max.words=100, random.order=TRUE,
+          rot.per=0.5, use.r.layout=FALSE,
+          colors=brewer.pal(8, "Dark2"))
+```
+
+From the above word cloud we can conclude that twitter has the fewer unique words, while blogs have the most unique words.
+
+N-grams
+-------
+
+N-gram is a contiguous sequence of n items from a given sequence of text or speech. An n-gram of size 1 is referred to as a "unigram", size 2 is a "bigram", size 3 is a "trigram", and size 4 is a four-gram. To learn more about n-grams visit <http://en.wikipedia.org/wiki/N-gram>
+
+So the next step is to find the frequencies of bigrams, trigrams, and fourgrams.
+
+```{r n_grams, echo=TRUE, warning=FALSE, message=FALSE}
+BigramTokenizer = function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
+
+TrigramTokenizer = function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3))
+
+FourgramTokenizer = function(x) NGramTokenizer(x, Weka_control(min = 4, max = 4))
+
+sample_all_corpus = VCorpus(VectorSource(sample_all))
+
+sample_all_corpus = tm_map(sample_all_corpus, stripWhitespace)
+sample_all_corpus = tm_map(sample_all_corpus, content_transformer(tolower))
+```
+
+```{r 2-grams, echo=TRUE, warning=FALSE, message=FALSE}
+# 2-grams
+bigram_dtm_all = DocumentTermMatrix(sample_all_corpus, control = list(removePunctuation = TRUE,
+                                                                          removeNumbers = TRUE,
+                                                                          tokenize = BigramTokenizer))
+
+freq_bigram_all = sort(colSums(as.matrix(bigram_dtm_all)), decreasing = TRUE)
+
+bigram_all_df = data.frame(word = names(freq_bigram_all), frequency = freq_bigram_all)
+rownames(bigram_all_df) = NULL
+
+par(mar=c(10,5,5,5))
+bar = barplot(bigram_all_df$frequency[1:20],
+              xaxt="n", xlab="",
+              ylab="Frequency",
+              main = "The 20 most frequent 2-grams",
+              col=rainbow(20))
+
+axis(1, labels = bigram_all_df$word[1:20], at = bar,
+     las = 2, cex.axis = 0.6)
+```
+
+```{r 3-grams, echo=TRUE, warning=FALSE, message=FALSE}
+# 3-grams
+trigram_dtm_all = DocumentTermMatrix(sample_all_corpus, control = list(removePunctuation = TRUE,
+                                                                          removeNumbers = TRUE,
+                                                                          tokenize = TrigramTokenizer))
+
+freq_trigram_all = sort(colSums(as.matrix(trigram_dtm_all)), decreasing = TRUE)
+
+trigram_all_df = data.frame(word = names(freq_trigram_all), frequency = freq_trigram_all)
+rownames(trigram_all_df) = NULL
+
+par(mar=c(10,5,5,5))
+bar = barplot(trigram_all_df$frequency[1:20],
+              xaxt="n", xlab="",
+              ylab="Frequency",
+              main = "The 20 most frequent 3-grams",
+              col=rainbow(20))
+
+axis(1, labels = trigram_all_df$word[1:20], at = bar,
+     las = 2, cex.axis = 0.6)
+```
+
+```{r 4-grams, echo=TRUE, warning=FALSE, message=FALSE}
+# 4-grams
+fourgram_dtm_all = DocumentTermMatrix(sample_all_corpus, control = list(removePunctuation = TRUE,
+                                                                           removeNumbers = TRUE,
+                                                                           tokenize = FourgramTokenizer))
+
+freq_fourgram_all = sort(colSums(as.matrix(fourgram_dtm_all)), decreasing = TRUE)
+
+fourgram_all_df = data.frame(word = names(freq_fourgram_all), frequency = freq_fourgram_all)
+rownames(fourgram_all_df) = NULL
+
+par(mar=c(10,5,5,5))
+bar = barplot(fourgram_all_df$frequency[1:20],
+              xaxt="n", xlab="",
+              ylab="Frequency",
+              main = "The 20 most frequent 4-grams",
+              col=rainbow(20))
+
+axis(1, labels = fourgram_all_df$word[1:20], at = bar,
+     las = 2, cex.axis = 0.6)
+```
+
+Conclusion
+----------
+
+We have explored the three datasets (blogs, news, twitter). We concluded that twitter has the fewer unique words, while blogs have the most unique words. A next task is to correct the spelling errors. For this task we will utilize the R Package **qdap**. The next task is to train our classification model with the 2-grams, 3-grams, and 4-grams with their frequencies. The dependent variable would be the last word of the n-grams and the independent variables the rest of the words. The next step is to create the Shiny App. The app will contain a text input and a text output. The input will be used by the our prediction model to predict three words that the user may intent to write, and display them to the text output.
